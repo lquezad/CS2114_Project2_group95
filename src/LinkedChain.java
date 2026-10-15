@@ -8,7 +8,7 @@
  * of insertion. addToEnd() preserves insertion order. Time complexity, where n
  * is the number of entries: add O(1) addToEnd O(n) remove() O(1) remove(T) O(n)
  * clear O(1) get O(n) contains O(n) count O(n) size O(1) isEmpty O(1) toArray
- * O(n)
+ * O(n) removeAt O(n) indexOf O(n)
  *
  * @author CS 2114 Staff
  * @version September 2026
@@ -322,6 +322,7 @@ public class LinkedChain<T>
         return target.data;
     }
  
+    
     /**
      * Finds the position of the first occurrence of a given entry.
      *
