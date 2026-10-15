@@ -233,4 +233,123 @@ public class Playlist
         }
         return Optional.empty();
     }
+
+
+    /**
+     * Turns loop mode on or off. With loop mode on, next and previous wrap
+     * around at the ends.
+     *
+     * @param loop
+     *            true to turn loop mode on or false to turn it off
+     */
+    public void setLoopMode(boolean loop)
+    {
+        loopMode = loop;
+    }
+
+
+    /**
+     * Tells whether loop mode is on.
+     *
+     * @return true if loop mode is on or false if not
+     */
+    public boolean isLoopMode()
+    {
+        return loopMode;
+    }
+
+
+    /**
+     * Shuffles the songs. Podcast episodes keep their positions, since episodes
+     * are meant to be heard in order.
+     */
+    public void shuffle()
+    {
+        if (chain.size() < 2)
+        {
+            return;
+        }
+        Media[] items = getItems();
+        int[] positions = new int[items.length];
+        int count = 0;
+        for (int i = 0; i < items.length; i++)
+        {
+            if (items[i].isShuffleable())
+            {
+                positions[count] = i;
+                count++;
+            }
+        }
+        for (int i = count - 1; i > 0; i--)
+        {
+            int j = random.nextInt(i + 1);
+            Media temp = items[positions[i]];
+            items[positions[i]] = items[positions[j]];
+            items[positions[j]] = temp;
+        }
+        chain.clear();
+        for (int i = items.length - 1; i >= 0; i--)
+        {
+            chain.add(items[i]);
+        }
+        currentIndex = -1;
+    }
+
+
+    /**
+     * Gets a copy of the playlist in play order.
+     *
+     * @return the items in play order or an array of length 0 if the playlist
+     *             is empty
+     */
+    public Media[] getItems()
+    {
+        return chain.toArray(new Media[chain.size()]);
+    }
+
+
+    /**
+     * Gets the position of the current item.
+     *
+     * @return the position of the current item, or -1 if nothing is selected
+     */
+    public int getCurrentIndex()
+    {
+        return currentIndex;
+    }
+
+
+    /**
+     * Gets the number of items in the playlist.
+     *
+     * @return the number of items
+     */
+    public int size()
+    {
+        return chain.size();
+    }
+
+
+    /**
+     * Sees whether the playlist is empty.
+     *
+     * @return true if the playlist has no items or false if not
+     */
+    public boolean isEmpty()
+    {
+        return chain.isEmpty();
+    }
+
+
+    /**
+     * Tests whether a position is inside the playlist.
+     *
+     * @param index
+     *            the position to check
+     * @return true if index is at least 0 and less than size() or false if not
+     */
+    private boolean isInRange(int index)
+    {
+        return index >= 0 && index < chain.size();
+    }
 }
