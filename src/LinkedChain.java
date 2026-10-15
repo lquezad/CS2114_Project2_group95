@@ -289,7 +289,66 @@ public class LinkedChain<T>
         sb.append("]");
         return sb.toString();
     }
-
+    
+    
+    /**
+     * Removes and returns the entry at the given position.
+     *
+     * @param index the zero-based position
+     * @return the removed entry
+     * @throws IndexOutOfBoundsException if index is negative or
+     *         index is greater than or equal to size()
+     */
+    public T removeAt(int index)
+    {
+        if (index < 0 || index >= numberOfEntries)
+        {
+            throw new IndexOutOfBoundsException(
+                "Index " + index + " out of bounds for size "
+                + numberOfEntries);
+        }
+        if (index == 0)
+        {
+            return remove();
+        }
+        Node<T> previous = firstNode;
+        for (int i = 0; i < index - 1; i++)
+        {
+            previous = previous.next;
+        }
+        Node<T> target = previous.next;
+        previous.next = target.next;
+        numberOfEntries--;
+        return target.data;
+    }
+ 
+    /**
+     * Finds the position of the first occurrence of a given entry.
+     *
+     * @param anEntry the entry to locate
+     * @return the zero-based index of the first entry that equals anEntry
+     *         or -1 if it is not found, anEntry is null, or the chain is empty
+     */
+    public int indexOf(T anEntry)
+    {
+        if (anEntry == null)
+        {
+            return -1;
+        }
+        int index = 0;
+        Node<T> current = firstNode;
+        while (current != null)
+        {
+            if (anEntry.equals(current.data))
+            {
+                return index;
+            }
+            index++;
+            current = current.next;
+        }
+        return -1;
+    }
+    
 
     /**
      * Rejects null entries.
