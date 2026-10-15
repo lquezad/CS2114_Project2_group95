@@ -1,18 +1,48 @@
 // -------------------------------------------------------------------------
 /**
- *  Write a one-sentence summary of your class here.
- *  Follow it with additional details about its purpose, what abstraction
- *  it represents, and how to use it.
+ * Interface for any media that can be played in the playlist (Song and Podcast)
+ * Both Song and Podcast implement it so a LinkedChain can hold them both.
  * 
- *  @author lquezadr
- *  @version Oct 14, 2026
+ * @author justisp
+ * @version Oct 14, 2026
  */
-public class Media
+public interface Media
 {
-    //~ Fields ................................................................
+    // ~Public Methods ........................................................
 
-    //~ Constructors ..........................................................
+    // ----------------------------------------------------------
+    /**
+     * Gets the title.
+     *
+     * @return the title
+     */
+    String getTitle();
 
-    //~Public  Methods ........................................................
 
+    // ----------------------------------------------------------
+    /**
+     * Gets the length.
+     *
+     * @return the length in seconds
+     */
+    int getLength();
+
+
+    // ----------------------------------------------------------
+    /**
+     * Describes this media on one line.
+     *
+     * @return the display line
+     */
+    String describe();
+
+
+    // ----------------------------------------------------------
+    /**
+     * Tells whether shuffle may move this item. Songs can be moved and podcast
+     * episodes keep their positions.
+     *
+     * @return true if shuffle may move this item, or false if not
+     */
+    boolean isShuffleable();
 }
