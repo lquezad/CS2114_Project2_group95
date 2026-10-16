@@ -1,5 +1,3 @@
-package project2;
-
 import java.util.Optional;
 import java.util.Random;
 import student.TestCase;

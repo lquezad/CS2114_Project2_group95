@@ -1,5 +1,3 @@
-package project2;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,14 +13,6 @@ import student.TestCase;
 /**
  * Tests for MusicPlayerGUI.
  *
- * The GUI's fields and handler methods are private in the spec, so this class
- * reaches them with reflection. If your handlers/fields are package-private
- * you can replace the helpers with direct access.
- *
- * NOTE: MusicPlayerGUI extends JFrame, and creating a JFrame throws
- * HeadlessException on a machine with no display. Run these tests somewhere
- * with a display (your own computer, not a headless server). The tests never
- * make the window visible.
  */
 public class MusicPlayerGUITest extends TestCase
 {
@@ -45,7 +35,10 @@ public class MusicPlayerGUITest extends TestCase
 
     public void tearDown()
     {
-        gui.dispose();
+        if (gui != null)
+        {
+            gui.dispose();
+        }
     }
 
 
@@ -207,9 +200,9 @@ public class MusicPlayerGUITest extends TestCase
         // Loop toggle
         click("loopToggle");
         assertTrue(playlist.isLoopMode());
-        // Shuffle (clears the current item)
+        // Shuffle (the GUI then starts at the first item of the new order)
         click("shuffleButton");
-        assertEquals(-1, playlist.getCurrentIndex());
+        assertEquals(0, playlist.getCurrentIndex());
         assertEquals(2, playlist.size());
         // Remove
         list().setSelectedIndex(0);
@@ -294,6 +287,58 @@ public class MusicPlayerGUITest extends TestCase
     }
 
 
+    public void testHandleAddAppendsToEnd()
+    {
+        playlist.add(b);
+        call("refreshList");
+        fillSongForm("Yellow", "Coldplay", "Parachutes", "266");
+        call("handleAdd");
+        assertEquals(2, playlist.size());
+        assertEquals(b, playlist.getItems()[0]);
+        assertEquals(new Song("Yellow", "Coldplay", "Parachutes", 266),
+            playlist.getItems()[1]);
+    }
+
+
+    public void testHandleAddShowsStatus()
+    {
+        fillSongForm("Yellow", "Coldplay", "Parachutes", "266");
+        call("handleAdd");
+        assertEquals("Added Yellow", status().getText());
+    }
+
+
+    public void testHandleAddBlankArtistAndAlbum()
+    {
+        fillSongForm("Yellow", "", "   ", "266");
+        call("handleAdd");
+        assertEquals(1, playlist.size());
+        Song added = (Song)playlist.getItems()[0];
+        assertEquals("Unknown", added.getArtist());
+        assertEquals("Unknown", added.getAlbum());
+    }
+
+
+    public void testHandleAddClearsFormOnSuccess()
+    {
+        fillSongForm("Yellow", "Coldplay", "Parachutes", "266");
+        call("handleAdd");
+        assertEquals("", text("titleField").getText());
+        assertEquals("", text("artistOrHostField").getText());
+        assertEquals("", text("albumField").getText());
+        assertEquals("", text("lengthField").getText());
+    }
+
+
+    public void testHandleAddKeepsFormOnError()
+    {
+        fillSongForm("Yellow", "Coldplay", "Parachutes", "abc");
+        call("handleAdd");
+        assertEquals("Yellow", text("titleField").getText());
+        assertEquals("abc", text("lengthField").getText());
+    }
+
+
     public void testHandleAddPodcast()
     {
         typeBox().setSelectedIndex(1); // assumes index 1 is "Podcast"
@@ -317,6 +362,20 @@ public class MusicPlayerGUITest extends TestCase
         text("lengthField").setText("3600");
         call("handleAdd");
         assertEquals("Episode number must be a whole number greater than 0",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    public void testHandleAddZeroEpisode()
+    {
+        typeBox().setSelectedIndex(1);
+        text("titleField").setText("Hardcore History");
+        text("artistOrHostField").setText("Dan");
+        text("episodeField").setText("0");
+        text("lengthField").setText("3600");
+        call("handleAdd");
+        assertEquals("Episode number must be greater than 0",
             status().getText());
         assertEquals(0, playlist.size());
     }
@@ -363,6 +422,21 @@ public class MusicPlayerGUITest extends TestCase
         assertEquals(a, playlist.getItems()[0]);
         assertEquals(c, playlist.getItems()[1]);
         assertEquals(2, model().size());
+    }
+
+
+    public void testHandleRemoveLastDuplicate()
+    {
+        // [A, B, A]: removing row 2 must remove the last A, not the first.
+        playlist.add(a);
+        playlist.add(b);
+        playlist.add(a);
+        call("refreshList");
+        list().setSelectedIndex(2);
+        call("handleRemove");
+        assertEquals(2, playlist.size());
+        assertEquals(a, playlist.getItems()[0]);
+        assertEquals(b, playlist.getItems()[1]);
     }
 
 
@@ -444,6 +518,18 @@ public class MusicPlayerGUITest extends TestCase
     }
 
 
+    public void testHandleNextEndOfPlaylistLoopOn()
+    {
+        fillABC();
+        playlist.setLoopMode(true);
+        playlist.play(2);
+        call("handleNext");
+        assertEquals(0, playlist.getCurrentIndex());
+        assertEquals(a.describe(), nowPlaying().getText());
+        assertEquals(0, list().getSelectedIndex());
+    }
+
+
     public void testHandlePrevious()
     {
         fillABC();
@@ -471,6 +557,17 @@ public class MusicPlayerGUITest extends TestCase
     }
 
 
+    public void testHandlePreviousStartOfPlaylistLoopOn()
+    {
+        fillABC();
+        playlist.setLoopMode(true);
+        playlist.play(0);
+        call("handlePrevious");
+        assertEquals(2, playlist.getCurrentIndex());
+        assertEquals(c.describe(), nowPlaying().getText());
+    }
+
+
     public void testHandleShuffle()
     {
         Podcast pod = new Podcast("Pod", "Host", 1, 600);
@@ -487,11 +584,55 @@ public class MusicPlayerGUITest extends TestCase
     }
 
 
+    public void testHandleShuffleKeepsAllItems()
+    {
+        fillABC();
+        call("handleShuffle");
+        assertEquals(3, playlist.size());
+        boolean foundA = false;
+        boolean foundB = false;
+        boolean foundC = false;
+        for (Media m : playlist.getItems())
+        {
+            foundA = foundA || m.equals(a);
+            foundB = foundB || m.equals(b);
+            foundC = foundC || m.equals(c);
+        }
+        assertTrue(foundA);
+        assertTrue(foundB);
+        assertTrue(foundC);
+    }
+
+
+    public void testHandleShuffleStartsAtFirstItem()
+    {
+        fillABC();
+        playlist.play(1);
+        call("updateNowPlaying");
+        call("handleShuffle");
+        assertEquals(0, playlist.getCurrentIndex());
+        assertEquals(playlist.getItems()[0].describe(),
+            nowPlaying().getText());
+        assertEquals(0, list().getSelectedIndex());
+    }
+
+
+    public void testHandleShuffleOneItemPlaysNothing()
+    {
+        playlist.add(a);
+        call("refreshList");
+        call("handleShuffle");
+        assertEquals(-1, playlist.getCurrentIndex());
+        assertEquals("Nothing playing", nowPlaying().getText());
+    }
+
+
     public void testHandleShuffleEmptyPlaylist()
     {
         call("handleShuffle");
         assertEquals(0, model().size());
         assertEquals(0, playlist.size());
+        assertEquals(" ", status().getText());
     }
 
 
@@ -521,6 +662,17 @@ public class MusicPlayerGUITest extends TestCase
         playlist.play(1);
         call("updateNowPlaying");
         assertEquals(b.describe(), nowPlaying().getText());
+    }
+
+
+    public void testUpdateNowPlayingPodcast()
+    {
+        playlist.add(new Podcast("Hardcore History", "Dan", 12, 3600));
+        call("refreshList");
+        playlist.play(0);
+        call("updateNowPlaying");
+        assertEquals("Hardcore History #12 - Dan 60:00",
+            nowPlaying().getText());
     }
 
 

@@ -1,5 +1,3 @@
-package project2;
-
 import student.TestCase;
 
 /**
