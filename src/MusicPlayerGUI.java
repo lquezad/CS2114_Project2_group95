@@ -10,11 +10,7 @@ import javax.swing.plaf.basic.*;
  * and a player bar along the bottom (now playing on the left, transport
  * controls in the center, status messages on the right).
  *
- * Playback is simulated: it only shows what is playing and plays no audio.
- * The window is built but not shown by the constructor; the caller
- * (MusicPlayer.main) should call setVisible(true).
- *
- * @author Group 95
+ * @author Leo Quezada-Rocha
  * @version October 2026
  */
 public class MusicPlayerGUI extends JFrame
