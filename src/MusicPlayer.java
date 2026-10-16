@@ -1,87 +1,71 @@
-
 import java.util.Scanner;
-import javax.swing.*;
-
+import javax.swing.SwingUtilities;
+ 
+// -------------------------------------------------------------------------
 /**
- * The main class. The program is run from here: main creates the Playlist and
- * launches the GUI. The console helpers (readPositiveInt and readNonBlank)
- * re-prompt until the input is valid, so a console front end can use the same
- * rules as the GUI.
+ * The main class of the music player. It starts the program by creating the
+ * playlist and opening the Swing window, and it holds the console helpers
+ * that keep asking until the user types usable input.
  *
- * @author
- * @version October 2026
+ * @author Team 95
+ * @version Oct 15, 2026
  */
 public class MusicPlayer
 {
-    private final Playlist playlist; // the main playlist
-    private final Scanner scanner;   // reads the user's input
-
+    private static final String BAD_NUMBER =
+        "Length must be a whole number greater than 0";
+ 
+    private final Playlist playlist; // the main playlist used by the program
+    private final Scanner scanner;   // reads the user's console input
+ 
     /**
-     * Creates a MusicPlayer around a playlist and an input source.
-     *
-     * @param playlist
-     *            the playlist to manage
-     * @param scanner
-     *            where console input is read from
-     * @throws IllegalArgumentException
-     *             if either argument is null
+     * Creates a music player with an empty playlist that reads console input
+     * from System.in.
      */
-    public MusicPlayer(Playlist playlist, Scanner scanner)
+    public MusicPlayer()
     {
-        if (playlist == null || scanner == null)
-        {
-            throw new IllegalArgumentException(
-                "Playlist and scanner must not be null");
-        }
-        this.playlist = playlist;
-        this.scanner = scanner;
+        playlist = new Playlist();
+        scanner = new Scanner(System.in);
     }
-
-
+ 
+ 
     /**
-     * Gets the playlist this player manages.
-     *
-     * @return the playlist
-     */
-    public Playlist getPlaylist()
-    {
-        return playlist;
-    }
-
-
-    /**
-     * Starts the program: creates an empty Playlist and opens the GUI. Any
-     * arguments are ignored.
+     * Creates the playlist and launches the window. Any arguments are ignored.
      *
      * @param args
-     *            unused
+     *            unused command-line arguments
      */
     public static void main(String[] args)
     {
-        Playlist playlist = new Playlist();
-        SwingUtilities.invokeLater(() -> {
-            MusicPlayerGUI gui = new MusicPlayerGUI(playlist);
-            gui.setVisible(true);
+        final MusicPlayer player = new MusicPlayer();
+        SwingUtilities.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                new MusicPlayerGUI(player.playlist).setVisible(true);
+            }
         });
     }
-
-
+ 
+ 
     /**
-     * Re-prompts until the user types a whole number greater than 0.
+     * Shows a prompt and asks again until the user types a whole number
+     * greater than 0.
      *
      * @param prompt
      *            the text shown before each attempt
-     * @return the number typed
+     * @return the number the user typed
      */
     public int readPositiveInt(String prompt)
     {
         while (true)
         {
             System.out.print(prompt);
-            String line = scanner.nextLine().trim();
+            String line = scanner.nextLine();
             try
             {
-                int value = Integer.parseInt(line);
+                int value = Integer.parseInt(line.trim());
                 if (value > 0)
                 {
                     return value;
@@ -89,31 +73,31 @@ public class MusicPlayer
             }
             catch (NumberFormatException e)
             {
-                // fall through to the message below
+                // not a whole number: fall through to the message below
             }
-            System.out.println("Length must be a whole number greater than 0");
+            System.out.println(BAD_NUMBER);
         }
     }
-
-
+ 
+ 
     /**
-     * Re-prompts until the input is not empty or only spaces.
+     * Shows a prompt and asks again until the user types something other than
+     * an empty line or only spaces.
      *
      * @param prompt
      *            the text shown before each attempt
-     * @return the non-blank text typed, trimmed
+     * @return the text the user typed
      */
     public String readNonBlank(String prompt)
     {
         while (true)
         {
             System.out.print(prompt);
-            String line = scanner.nextLine().trim();
-            if (!line.isEmpty())
+            String line = scanner.nextLine();
+            if (!line.trim().isEmpty())
             {
                 return line;
             }
-            System.out.println("Input must not be blank");
         }
     }
 }
