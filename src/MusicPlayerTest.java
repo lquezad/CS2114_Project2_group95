@@ -7,13 +7,6 @@ import student.TestCase;
 
 /**
  * Tests for MusicPlayer.
- *
- * The console helpers are tested by giving MusicPlayer a Scanner built from a
- * String, and by reading what it printed from systemOut().
- *
- * NOTE: testMain and testMainUnexpectedArguments open the real window, so
- * they need a machine with a display (your own computer, not a headless
- * server). The tests close every window they open.
  */
 public class MusicPlayerTest extends TestCase
 {

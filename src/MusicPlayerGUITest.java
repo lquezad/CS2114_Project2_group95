@@ -1,13 +1,5 @@
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import javax.swing.AbstractButton;
-import javax.swing.DefaultListModel;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
+import java.lang.reflect.*;
+import javax.swing.*;
 import student.TestCase;
 
 /**
