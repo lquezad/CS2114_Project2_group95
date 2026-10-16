@@ -30,7 +30,7 @@ public class Podcast implements Media
      */
     public Podcast(String title, String host, int episodeNumber, int length)
     {
-        if (title == null || title.isBlank())
+        if (title == null || title.trim().isEmpty())
         {
             throw new IllegalArgumentException("Title must not be blank");
         }
@@ -50,7 +50,7 @@ public class Podcast implements Media
         this.length = length;
         this.episodeNumber = episodeNumber;
 
-        if (host == null || host.isBlank())
+        if (host == null || host.trim().isEmpty())
         {
             this.host = "Unknown";
         }
