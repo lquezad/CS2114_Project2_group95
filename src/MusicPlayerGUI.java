@@ -12,7 +12,7 @@ import javax.swing.plaf.basic.*;
  * status messages on the right).
  *
  * @author Leo Quezada-Rocha
- * @version October 2026
+ * @version Oct 22,2026
  */
 public class MusicPlayerGUI
     extends JFrame
@@ -49,6 +49,8 @@ public class MusicPlayerGUI
     private final JButton removeButton;
     private final JButton addAlbumButton;
     private final JButton removeAlbumButton;
+    private final JButton addSeriesButton;
+    private final JButton removeSeriesButton;
     private final JButton playButton;
     private final JButton nextButton;
     private final JButton previousButton;
@@ -56,8 +58,8 @@ public class MusicPlayerGUI
     private final JToggleButton loopToggle;
     private final JLabel nowPlayingLabel;
     private final JLabel statusLabel;
-    private final JLabel countLabel;                  // "3 items" header
-    private Media[] shownItems = new Media[0];        // items behind rows
+    private final JLabel countLabel;
+    private Media[] shownItems = new Media[0];
 
     /**
      * Builds the window and wires each control to its handler.
@@ -92,6 +94,9 @@ public class MusicPlayerGUI
         addAlbumButton = new PillButton("Add album", null, TEXT, SUBTEXT);
         removeAlbumButton =
             new PillButton("Delete album", null, DANGER, DANGER);
+        addSeriesButton = new PillButton("Add series", null, TEXT, SUBTEXT);
+        removeSeriesButton =
+            new PillButton("Delete series", null, DANGER, DANGER);
         shuffleButton = new PillButton("Shuffle", null, TEXT, SUBTEXT);
         loopToggle = new PillToggle("Loop");
         playButton = new TransportButton(TransportButton.PLAY, 46);
@@ -246,9 +251,18 @@ public class MusicPlayerGUI
         albumButtons.setBackground(BG);
         albumButtons.add(addAlbumButton);
         albumButtons.add(removeAlbumButton);
+        JPanel seriesButtons =
+            new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        seriesButtons.setBackground(BG);
+        seriesButtons.add(addSeriesButton);
+        seriesButtons.add(removeSeriesButton);
+        JPanel buttonRows = new JPanel(new GridLayout(2, 1, 0, 8));
+        buttonRows.setBackground(BG);
+        buttonRows.add(albumButtons);
+        buttonRows.add(seriesButtons);
         JPanel buttonHolder = new JPanel(new BorderLayout());
         buttonHolder.setBackground(BG);
-        buttonHolder.add(albumButtons, BorderLayout.SOUTH);
+        buttonHolder.add(buttonRows, BorderLayout.SOUTH);
         header.add(buttonHolder, BorderLayout.EAST);
         main.add(header, BorderLayout.NORTH);
 
@@ -410,6 +424,8 @@ public class MusicPlayerGUI
         removeButton.addActionListener(e -> handleRemove());
         addAlbumButton.addActionListener(e -> handleAddAlbum());
         removeAlbumButton.addActionListener(e -> handleDeleteAlbum());
+        addSeriesButton.addActionListener(e -> handleAddSeries());
+        removeSeriesButton.addActionListener(e -> handleDeleteSeries());
         playButton.addActionListener(e -> handlePlay());
         nextButton.addActionListener(e -> handleNext());
         previousButton.addActionListener(e -> handlePrevious());
@@ -498,7 +514,6 @@ public class MusicPlayerGUI
         }
         catch (IllegalArgumentException e)
         {
-            // Covers constructor rules and bad numbers.
             showStatus(e.getMessage());
         }
     }
@@ -726,7 +741,7 @@ public class MusicPlayerGUI
     {
         int removed = 0;
         Media[] items = playlist.getItems();
-        // go backward so earlier positions stay valid after each removal
+
         for (int i = items.length - 1; i >= 0; i--)
         {
             if (isFromAlbum(items[i], title))
@@ -790,6 +805,245 @@ public class MusicPlayerGUI
             if (!seen)
             {
                 titles.add(album);
+            }
+        }
+        return titles.toArray(new String[0]);
+    }
+
+
+    /**
+     * Asks for a podcast series title, host, and episode list in a dialog, then
+     * adds the series. Does nothing if the dialog is cancelled.
+     */
+    void handleAddSeries()
+    {
+        JTextField titleInput = new JTextField(22);
+        JTextField hostInput = new JTextField(22);
+        JTextArea episodesInput = new JTextArea(8, 22);
+        JScrollPane episodesScroll = new JScrollPane(episodesInput);
+
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        Component[] parts = { new JLabel("Series title"), titleInput,
+            new JLabel("Host"), hostInput,
+            new JLabel(
+                "Episodes (one per line: episode number, length in seconds)"),
+            episodesScroll };
+        for (Component part : parts)
+        {
+            ((JComponent)part).setAlignmentX(Component.LEFT_ALIGNMENT);
+            form.add(part);
+            form.add(Box.createVerticalStrut(6));
+        }
+
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            form,
+            "Add series",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE);
+        if (choice == JOptionPane.OK_OPTION)
+        {
+            addSeries(
+                titleInput.getText(),
+                hostInput.getText(),
+                episodesInput.getText());
+        }
+    }
+
+
+    /**
+     * Builds a podcast series from text and adds all of its episodes, in order,
+     * to the end of the playlist. If anything is wrong, a message goes to the
+     * status label and nothing is added.
+     *
+     * @param title
+     *            the series title
+     * @param host
+     *            the host; blank becomes "Unknown"
+     * @param episodeLines
+     *            one episode per line, written as "number, seconds"
+     */
+    void addSeries(String title, String host, String episodeLines)
+    {
+        try
+        {
+            PodcastSeries series = new PodcastSeries(title, host);
+            String[] lines =
+                (episodeLines == null ? "" : episodeLines).split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++)
+            {
+                String line = lines[i].trim();
+                if (line.isEmpty())
+                {
+                    continue;
+                }
+                try
+                {
+                    series.addEpisode(parseSeriesEpisode(line, series));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new IllegalArgumentException(
+                        "Line " + (i + 1) + ": " + e.getMessage());
+                }
+            }
+            if (series.isEmpty())
+            {
+                throw new IllegalArgumentException(
+                    "Series needs at least one episode");
+            }
+            int count = series.size();
+            series.addToPlaylist(playlist);
+            refreshList();
+            updateNowPlaying();
+            showStatus(
+                "Added series " + series.getTitle() + " (" + count
+                    + (count == 1 ? " episode)" : " episodes)"));
+        }
+        catch (IllegalArgumentException e)
+        {
+            showStatus(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Turns one "number, seconds" line into an episode of the given series.
+     *
+     * @param line
+     *            the trimmed, non-empty line
+     * @param series
+     *            the series the episode belongs to
+     * @return the new episode
+     * @throws IllegalArgumentException
+     *             if the line is not valid
+     */
+    private Podcast parseSeriesEpisode(String line, PodcastSeries series)
+    {
+        int comma = line.lastIndexOf(',');
+        if (comma < 0)
+        {
+            throw new IllegalArgumentException(
+                "Write each episode as: number, seconds");
+        }
+        int episode = parseWholeNumber(
+            line.substring(0, comma),
+            "Episode number must be a whole number greater than 0");
+        int length = parseWholeNumber(
+            line.substring(comma + 1),
+            "Length must be a whole number greater than 0");
+        return new Podcast(
+            series.getTitle(),
+            series.getHost(),
+            episode,
+            length);
+    }
+
+
+    /**
+     * Asks which podcast series to delete (from the series in the playlist) and
+     * deletes it. Does nothing if the dialog is cancelled.
+     */
+    void handleDeleteSeries()
+    {
+        String[] titles = seriesTitlesInPlaylist();
+        if (titles.length == 0)
+        {
+            showStatus("No podcast series in the playlist");
+            return;
+        }
+        Object choice = JOptionPane.showInputDialog(
+            this,
+            "Delete which series?",
+            "Delete series",
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            titles,
+            titles[0]);
+        if (choice != null)
+        {
+            deleteSeries((String)choice);
+        }
+    }
+
+
+    /**
+     * Removes every podcast episode from the playlist whose title matches the
+     * given series title (case is ignored). The current position is kept in
+     * step by the playlist.
+     *
+     * @param title
+     *            the series title to delete
+     */
+    void deleteSeries(String title)
+    {
+        int removed = 0;
+        Media[] items = playlist.getItems();
+        // go backward so earlier positions stay valid after each removal
+        for (int i = items.length - 1; i >= 0; i--)
+        {
+            if (isFromSeries(items[i], title))
+            {
+                playlist.removeAt(i);
+                removed++;
+            }
+        }
+        refreshList();
+        updateNowPlaying();
+        if (removed == 0)
+        {
+            showStatus("No series named " + title);
+        }
+        else
+        {
+            showStatus(
+                "Deleted series " + title + " (" + removed
+                    + (removed == 1 ? " episode)" : " episodes)"));
+        }
+    }
+
+
+    /**
+     * Tells whether an item is an episode of the named series.
+     *
+     * @param item
+     *            the playlist item
+     * @param title
+     *            the series title, or null
+     * @return true for a podcast whose title equals title, ignoring case
+     */
+    private boolean isFromSeries(Media item, String title)
+    {
+        return title != null && item instanceof Podcast
+            && item.getTitle().equalsIgnoreCase(title);
+    }
+
+
+    /**
+     * Lists each podcast series that has episodes in the playlist, once, in
+     * order of first appearance. Songs are skipped.
+     *
+     * @return the series titles
+     */
+    private String[] seriesTitlesInPlaylist()
+    {
+        ArrayList<String> titles = new ArrayList<String>();
+        for (Media item : playlist.getItems())
+        {
+            if (!(item instanceof Podcast))
+            {
+                continue;
+            }
+            String series = item.getTitle();
+            boolean seen = false;
+            for (String t : titles)
+            {
+                seen = seen || t.equalsIgnoreCase(series);
+            }
+            if (!seen)
+            {
+                titles.add(series);
             }
         }
         return titles.toArray(new String[0]);

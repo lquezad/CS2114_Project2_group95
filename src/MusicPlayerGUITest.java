@@ -165,6 +165,32 @@ public class MusicPlayerGUITest
     }
 
 
+    private void addSeries(String title, String host, String episodes)
+    {
+        callWith("addSeries", title, host, episodes);
+    }
+
+
+    private void deleteSeries(String title)
+    {
+        callWith("deleteSeries", title);
+    }
+
+
+    /**
+     * Puts three episodes of series "Show" (plus two songs) in the playlist.
+     */
+    private void fillMixedSeries()
+    {
+        playlist.add(a);
+        playlist.add(new Podcast("Show", "Host", 1, 600));
+        playlist.add(new Podcast("Show", "Host", 2, 700));
+        playlist.add(new Podcast("Show", "Host", 3, 800));
+        playlist.add(b);
+        call("refreshList");
+    }
+
+
     /**
      * Puts three songs from album "P" (and one from AlbumA) in the playlist.
      */
@@ -1085,6 +1111,489 @@ public class MusicPlayerGUITest
         call("handleDeleteAlbum");
         assertEquals("No albums in the playlist", status().getText());
         assertEquals(2, playlist.size());
+    }
+
+    // ---------------------------------------------------------------
+    // Podcast series: buttons, addSeries, deleteSeries, handleDeleteSeries
+    // ---------------------------------------------------------------
+
+
+    /**
+     * Checks that the Add series and Delete series buttons were created.
+     */
+    public void testSeriesButtonsExist()
+    {
+        assertNotNull(field("addSeriesButton"));
+        assertNotNull(field("removeSeriesButton"));
+    }
+
+
+    /**
+     * Checks that a series' episodes are added in order with the series' title
+     * and host.
+     */
+    public void testAddSeries()
+    {
+        addSeries("Hardcore History", "Dan", "1, 3600\n2, 4000\n3, 5000");
+        assertEquals(3, playlist.size());
+        assertEquals(3, model().size());
+        Media[] items = playlist.getItems();
+        assertEquals(new Podcast("Hardcore History", "Dan", 1, 3600), items[0]);
+        assertEquals(new Podcast("Hardcore History", "Dan", 2, 4000), items[1]);
+        assertEquals(new Podcast("Hardcore History", "Dan", 3, 5000), items[2]);
+        assertEquals(
+            "Added series Hardcore History (3 episodes)",
+            status().getText());
+    }
+
+
+    /**
+     * Checks that a one-episode series works and the status says "1 episode".
+     */
+    public void testAddSeriesOneEpisode()
+    {
+        addSeries("Solo", "Someone", "1, 600");
+        assertEquals(1, playlist.size());
+        assertEquals("Added series Solo (1 episode)", status().getText());
+    }
+
+
+    /**
+     * Checks that series episodes go after the items already in the playlist.
+     */
+    public void testAddSeriesAppendsToEnd()
+    {
+        playlist.add(b);
+        call("refreshList");
+        addSeries("Show", "Host", "1, 60\n2, 70");
+        assertEquals(3, playlist.size());
+        assertEquals(b, playlist.getItems()[0]);
+        assertEquals(1, ((Podcast)playlist.getItems()[1]).getEpisodeNumber());
+        assertEquals(2, ((Podcast)playlist.getItems()[2]).getEpisodeNumber());
+    }
+
+
+    /**
+     * Checks that extra spaces are trimmed and blank lines in the episode box
+     * are ignored.
+     */
+    public void testAddSeriesTrimsAndSkipsBlankLines()
+    {
+        addSeries("  Show  ", " Host ", "\n  1 ,  60  \n\n   \n2, 70\n\n");
+        assertEquals(2, playlist.size());
+        assertEquals(
+            new Podcast("Show", "Host", 1, 60),
+            playlist.getItems()[0]);
+        assertEquals("Added series Show (2 episodes)", status().getText());
+    }
+
+
+    /**
+     * Checks that episodes separated by \r\n line endings are all read.
+     */
+    public void testAddSeriesWindowsLineEndings()
+    {
+        addSeries("Show", "Host", "1, 60\r\n2, 70");
+        assertEquals(2, playlist.size());
+    }
+
+
+    /**
+     * Checks that a blank series host makes each episode's host "Unknown".
+     */
+    public void testAddSeriesBlankHost()
+    {
+        addSeries("Show", "  ", "1, 60");
+        assertEquals("Unknown", ((Podcast)playlist.getItems()[0]).getHost());
+        assertEquals("Show", playlist.getItems()[0].getTitle());
+    }
+
+
+    /**
+     * Checks that adding a series updates the visible list.
+     */
+    public void testAddSeriesRefreshesList()
+    {
+        addSeries("Show", "Host", "1, 60");
+        assertEquals(1, model().size());
+        assertEquals(playlist.getItems()[0].describe(), model().get(0));
+    }
+
+
+    /**
+     * Checks that adding a series does not change which item is playing.
+     */
+    public void testAddSeriesKeepsCurrentItem()
+    {
+        playlist.add(a);
+        call("refreshList");
+        playlist.play(0);
+        call("updateNowPlaying");
+        addSeries("Show", "Host", "1, 60");
+        assertEquals(0, playlist.getCurrentIndex());
+        assertEquals(a.describe(), nowPlaying().getText());
+    }
+
+
+    /**
+     * Checks that a null, empty, or blank series title shows an error and adds
+     * nothing.
+     */
+    public void testAddSeriesBlankTitle()
+    {
+        String[] titles = { null, "", "   " };
+        for (String t : titles)
+        {
+            addSeries(t, "Host", "1, 60");
+            assertEquals("Title must not be blank", status().getText());
+            assertEquals(0, playlist.size());
+        }
+    }
+
+
+    /**
+     * Checks that a series with no episode lines shows an error and adds
+     * nothing.
+     */
+    public void testAddSeriesNoEpisodes()
+    {
+        String[] inputs = { null, "", "  \n \n" };
+        for (String episodes : inputs)
+        {
+            addSeries("Show", "Host", episodes);
+            assertEquals(
+                "Series needs at least one episode",
+                status().getText());
+            assertEquals(0, playlist.size());
+        }
+    }
+
+
+    /**
+     * Checks that an episode line with no comma shows an error with its line
+     * number.
+     */
+    public void testAddSeriesMissingComma()
+    {
+        addSeries("Show", "Host", "1, 60\n2 70");
+        assertEquals(
+            "Line 2: Write each episode as: number, seconds",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    /**
+     * Checks that a non-numeric episode number shows an error with its line
+     * number and adds nothing.
+     */
+    public void testAddSeriesNonNumericEpisode()
+    {
+        addSeries("Show", "Host", "x, 60");
+        assertEquals(
+            "Line 1: Episode number must be a whole number greater than 0",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    /**
+     * Checks that an episode number of 0 shows an error with its line number
+     * and adds nothing.
+     */
+    public void testAddSeriesZeroEpisode()
+    {
+        addSeries("Show", "Host", "0, 60");
+        assertEquals(
+            "Line 1: Episode number must be greater than 0",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    /**
+     * Checks that a non-numeric episode length shows an error with its line
+     * number and adds nothing.
+     */
+    public void testAddSeriesNonNumericLength()
+    {
+        addSeries("Show", "Host", "1, 60\n2, abc");
+        assertEquals(
+            "Line 2: Length must be a whole number greater than 0",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    /**
+     * Checks that an episode length of 0 shows an error with its line number
+     * and adds nothing.
+     */
+    public void testAddSeriesZeroLength()
+    {
+        addSeries("Show", "Host", "1, 0");
+        assertEquals(
+            "Line 1: Length must be greater than 0",
+            status().getText());
+        assertEquals(0, playlist.size());
+    }
+
+
+    /**
+     * Checks that the line number in an error counts blank lines too.
+     */
+    public void testAddSeriesErrorLineNumberCountsBlankLines()
+    {
+        addSeries("Show", "Host", "1, 60\n\n\n2, x");
+        assertEquals(
+            "Line 4: Length must be a whole number greater than 0",
+            status().getText());
+    }
+
+
+    /**
+     * Checks that one bad line stops the whole series from being added.
+     */
+    public void testAddSeriesErrorAddsNothingEvenAfterGoodLines()
+    {
+        playlist.add(a);
+        call("refreshList");
+        addSeries("Show", "Host", "1, 60\n2, abc");
+        assertEquals(1, playlist.size());
+        assertEquals(1, model().size());
+    }
+
+
+    /**
+     * Checks that deleting a series removes all of its episodes and keeps the
+     * others.
+     */
+    public void testDeleteSeries()
+    {
+        fillMixedSeries();
+        deleteSeries("Show");
+        assertEquals(2, playlist.size());
+        assertEquals(a, playlist.getItems()[0]);
+        assertEquals(b, playlist.getItems()[1]);
+        assertEquals(2, model().size());
+        assertEquals("Deleted series Show (3 episodes)", status().getText());
+    }
+
+
+    /**
+     * Checks that deleting a one-episode series works and the status says "1
+     * episode".
+     */
+    public void testDeleteSeriesOneEpisode()
+    {
+        playlist.add(a);
+        playlist.add(new Podcast("Solo", "Host", 1, 60));
+        call("refreshList");
+        deleteSeries("Solo");
+        assertEquals(1, playlist.size());
+        assertEquals("Deleted series Solo (1 episode)", status().getText());
+    }
+
+
+    /**
+     * Checks that the series title matches no matter how it is capitalized.
+     */
+    public void testDeleteSeriesIgnoresCase()
+    {
+        fillMixedSeries();
+        deleteSeries("sHoW");
+        assertEquals(2, playlist.size());
+    }
+
+
+    /**
+     * Checks that deleting a series that is not there removes nothing and says
+     * so.
+     */
+    public void testDeleteSeriesNotFound()
+    {
+        fillMixedSeries();
+        deleteSeries("Nope");
+        assertEquals(5, playlist.size());
+        assertEquals("No series named Nope", status().getText());
+    }
+
+
+    /**
+     * Checks that a null series title removes nothing and does not crash.
+     */
+    public void testDeleteSeriesNull()
+    {
+        fillMixedSeries();
+        deleteSeries(null);
+        assertEquals(5, playlist.size());
+        assertEquals("No series named null", status().getText());
+    }
+
+
+    /**
+     * Checks that deleting from an empty playlist says the series was not
+     * found.
+     */
+    public void testDeleteSeriesEmptyPlaylist()
+    {
+        deleteSeries("Show");
+        assertEquals(0, playlist.size());
+        assertEquals("No series named Show", status().getText());
+    }
+
+
+    /**
+     * Checks that every copy of a duplicated episode is removed.
+     */
+    public void testDeleteSeriesRemovesDuplicates()
+    {
+        Podcast e1 = new Podcast("Show", "Host", 1, 600);
+        playlist.add(e1);
+        playlist.add(a);
+        playlist.add(e1);
+        call("refreshList");
+        deleteSeries("Show");
+        assertEquals(1, playlist.size());
+        assertEquals(a, playlist.getItems()[0]);
+    }
+
+
+    /**
+     * Checks that a song is never removed, even when its title matches the
+     * series.
+     */
+    public void testDeleteSeriesKeepsSongWithSameTitle()
+    {
+        Song song = new Song("Show", "Art", "Alb", 10);
+        playlist.add(song);
+        playlist.add(new Podcast("Show", "Host", 1, 600));
+        call("refreshList");
+        deleteSeries("Show");
+        assertEquals(1, playlist.size());
+        assertEquals(song, playlist.getItems()[0]);
+    }
+
+
+    /**
+     * Checks that the current item stays the same when it comes after the
+     * deleted series.
+     */
+    public void testDeleteSeriesCurrentItemAfterDeleted()
+    {
+        fillMixedSeries();
+        playlist.play(4); // b, after the series
+        call("updateNowPlaying");
+        deleteSeries("Show");
+        assertEquals(1, playlist.getCurrentIndex());
+        assertEquals(b, playlist.getCurrent().get());
+        assertEquals(b.describe(), nowPlaying().getText());
+    }
+
+
+    /**
+     * Checks that the current item stays the same when it comes before the
+     * deleted series.
+     */
+    public void testDeleteSeriesCurrentItemBeforeDeleted()
+    {
+        fillMixedSeries();
+        playlist.play(0); // a, before the series
+        deleteSeries("Show");
+        assertEquals(0, playlist.getCurrentIndex());
+        assertEquals(a, playlist.getCurrent().get());
+    }
+
+
+    /**
+     * Checks that the current position stays valid when the playing episode is
+     * deleted.
+     */
+    public void testDeleteSeriesCurrentItemInsideDeleted()
+    {
+        fillMixedSeries();
+        playlist.play(2); // inside the series
+        deleteSeries("Show");
+        assertEquals(2, playlist.size());
+        assertTrue(playlist.getCurrentIndex() >= 0);
+        assertTrue(playlist.getCurrentIndex() < playlist.size());
+    }
+
+
+    /**
+     * Checks that deleting every item leaves nothing selected and nothing
+     * playing.
+     */
+    public void testDeleteSeriesEmptiesPlaylist()
+    {
+        playlist.add(new Podcast("Show", "Host", 1, 600));
+        playlist.add(new Podcast("Show", "Host", 2, 700));
+        call("refreshList");
+        playlist.play(1);
+        call("updateNowPlaying");
+        deleteSeries("Show");
+        assertTrue(playlist.isEmpty());
+        assertEquals(-1, playlist.getCurrentIndex());
+        assertEquals("Nothing playing", nowPlaying().getText());
+        assertEquals(0, model().size());
+    }
+
+
+    /**
+     * Checks that a series can be added and then deleted, leaving the playlist
+     * as it was.
+     */
+    public void testAddThenDeleteSeries()
+    {
+        playlist.add(a);
+        call("refreshList");
+        addSeries("Show", "Host", "1, 60\n2, 70");
+        assertEquals(3, playlist.size());
+        deleteSeries("Show");
+        assertEquals(1, playlist.size());
+        assertEquals(a, playlist.getItems()[0]);
+    }
+
+
+    /**
+     * Checks that podcasts added through the sidebar form are removed with
+     * their series.
+     */
+    public void testDeleteSeriesAlsoRemovesEpisodesAddedFromForm()
+    {
+        typeBox().setSelectedIndex(1); // Podcast
+        text("titleField").setText("Show");
+        text("artistOrHostField").setText("Host");
+        text("episodeField").setText("1");
+        text("lengthField").setText("600");
+        call("handleAdd");
+        assertEquals(1, playlist.size());
+        deleteSeries("Show");
+        assertTrue(playlist.isEmpty());
+    }
+
+
+    /**
+     * Checks that deleting with no podcast series in the playlist shows a
+     * message instead of a dialog.
+     */
+    public void testHandleDeleteSeriesNoSeries()
+    {
+        // no dialog opens when there is nothing to choose from
+        call("handleDeleteSeries");
+        assertEquals("No podcast series in the playlist", status().getText());
+    }
+
+
+    /**
+     * Checks that a playlist holding only songs has no series to delete.
+     */
+    public void testHandleDeleteSeriesOnlySongs()
+    {
+        fillABC();
+        call("handleDeleteSeries");
+        assertEquals("No podcast series in the playlist", status().getText());
+        assertEquals(3, playlist.size());
     }
 
 
