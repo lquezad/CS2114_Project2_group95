@@ -12,7 +12,7 @@ import javax.swing.plaf.basic.*;
  * status messages on the right).
  *
  * @author Leo Quezada-Rocha
- * @version Oct 22,2026
+ * @version Oct 22, 2026
  */
 public class MusicPlayerGUI
     extends JFrame
@@ -58,8 +58,8 @@ public class MusicPlayerGUI
     private final JToggleButton loopToggle;
     private final JLabel nowPlayingLabel;
     private final JLabel statusLabel;
-    private final JLabel countLabel;
-    private Media[] shownItems = new Media[0];
+    private final JLabel countLabel;                  // "3 items" header
+    private Media[] shownItems = new Media[0];        // items behind rows
 
     /**
      * Builds the window and wires each control to its handler.
@@ -71,7 +71,7 @@ public class MusicPlayerGUI
      */
     public MusicPlayerGUI(Playlist playlist)
     {
-        super("Music Player");
+        super("Media Player");
         if (playlist == null)
         {
             throw new IllegalArgumentException("Playlist must not be null");
@@ -151,7 +151,7 @@ public class MusicPlayerGUI
         side.setBorder(BorderFactory.createEmptyBorder(24, 20, 20, 20));
         side.setPreferredSize(new Dimension(270, 0));
 
-        JLabel logo = new JLabel("Music Player");
+        JLabel logo = new JLabel("Media Player");
         logo.setFont(new Font("SansSerif", Font.BOLD, 22));
         logo.setForeground(ACCENT);
         logo.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -514,6 +514,7 @@ public class MusicPlayerGUI
         }
         catch (IllegalArgumentException e)
         {
+            // Covers constructor rules and bad numbers.
             showStatus(e.getMessage());
         }
     }
@@ -741,7 +742,7 @@ public class MusicPlayerGUI
     {
         int removed = 0;
         Media[] items = playlist.getItems();
-
+        // go backward so earlier positions stay valid after each removal
         for (int i = items.length - 1; i >= 0; i--)
         {
             if (isFromAlbum(items[i], title))
