@@ -1,19 +1,21 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.Optional;
 import javax.swing.*;
 import javax.swing.plaf.basic.*;
 
 /**
- * Swing window for the music player, laid out like a streaming app:
- * a sidebar with the add form on the left, the track list in the middle,
- * and a player bar along the bottom (now playing on the left, transport
- * controls in the center, status messages on the right).
+ * Swing window for the music player, laid out like a streaming app: a sidebar
+ * with the add form on the left, the track list in the middle, and a player bar
+ * along the bottom (now playing on the left, transport controls in the center,
+ * status messages on the right).
  *
  * @author Leo Quezada-Rocha
  * @version October 2026
  */
-public class MusicPlayerGUI extends JFrame
+public class MusicPlayerGUI
+    extends JFrame
 {
     // ---- colors and fonts ----
     private static final Color BG = new Color(38, 41, 47);
@@ -32,6 +34,7 @@ public class MusicPlayerGUI extends JFrame
     private static final String PODCAST = "Podcast";
     private static final String NO_SELECTION = "Select an item first";
     private static final String NOTHING_PLAYING = "Nothing playing";
+    private static final String UNKNOWN_ALBUM = "Unknown";
 
     private final Playlist playlist;                  // playlist being shown
     private final DefaultListModel<String> listModel; // rows in the list
@@ -44,6 +47,8 @@ public class MusicPlayerGUI extends JFrame
     private final JTextField lengthField;             // seconds
     private final JButton addButton;
     private final JButton removeButton;
+    private final JButton addAlbumButton;
+    private final JButton removeAlbumButton;
     private final JButton playButton;
     private final JButton nextButton;
     private final JButton previousButton;
@@ -57,8 +62,10 @@ public class MusicPlayerGUI extends JFrame
     /**
      * Builds the window and wires each control to its handler.
      *
-     * @param playlist the playlist to show and control
-     * @throws IllegalArgumentException if playlist is null
+     * @param playlist
+     *            the playlist to show and control
+     * @throws IllegalArgumentException
+     *             if playlist is null
      */
     public MusicPlayerGUI(Playlist playlist)
     {
@@ -79,15 +86,17 @@ public class MusicPlayerGUI extends JFrame
         episodeField = new JTextField();
         lengthField = new JTextField();
 
-        addButton = new PillButton("Add to playlist", ACCENT, Color.WHITE,
-            null);
-        removeButton = new PillButton("Remove selected", null, DANGER,
-            DANGER);
+        addButton =
+            new PillButton("Add to playlist", ACCENT, Color.WHITE, null);
+        removeButton = new PillButton("Remove selected", null, DANGER, DANGER);
+        addAlbumButton = new PillButton("Add album", null, TEXT, SUBTEXT);
+        removeAlbumButton =
+            new PillButton("Delete album", null, DANGER, DANGER);
         shuffleButton = new PillButton("Shuffle", null, TEXT, SUBTEXT);
         loopToggle = new PillToggle("Loop");
         playButton = new TransportButton(TransportButton.PLAY, 46);
-        nextButton = new TransportButton(TransportButton.NEXT, 34);
-        previousButton = new TransportButton(TransportButton.PREVIOUS, 34);
+        nextButton = new TransportButton(TransportButton.NEXT1, 34);
+        previousButton = new TransportButton(TransportButton.PREVIOUS1, 34);
 
         nowPlayingLabel = new JLabel(NOTHING_PLAYING);
         statusLabel = new JLabel(" ");
@@ -109,6 +118,7 @@ public class MusicPlayerGUI extends JFrame
     // Layout
     // =====================================================================
 
+
     /**
      * Lays out the sidebar, track list, and player bar.
      */
@@ -121,6 +131,7 @@ public class MusicPlayerGUI extends JFrame
         root.add(buildMainPanel(), BorderLayout.CENTER);
         root.add(buildPlayerBar(), BorderLayout.SOUTH);
     }
+
 
     /**
      * Builds the left sidebar holding the add form.
@@ -150,8 +161,8 @@ public class MusicPlayerGUI extends JFrame
         side.add(Box.createVerticalStrut(12));
 
         styleCombo(typeBox);
-        for (JTextField f : new JTextField[] { titleField,
-            artistOrHostField, albumField, episodeField, lengthField })
+        for (JTextField f : new JTextField[] { titleField, artistOrHostField,
+            albumField, episodeField, lengthField })
         {
             styleField(f);
         }
@@ -175,12 +186,16 @@ public class MusicPlayerGUI extends JFrame
         return side;
     }
 
+
     /**
      * Adds a small caption and a component to a vertical panel.
      *
-     * @param panel   the panel to add to
-     * @param caption the text above the component
-     * @param comp    the input component
+     * @param panel
+     *            the panel to add to
+     * @param caption
+     *            the text above the component
+     * @param comp
+     *            the input component
      */
     private void addRow(JPanel panel, String caption, JComponent comp)
     {
@@ -197,6 +212,7 @@ public class MusicPlayerGUI extends JFrame
         panel.add(Box.createVerticalStrut(12));
     }
 
+
     /**
      * Builds the center panel: a header and the track list.
      *
@@ -207,10 +223,12 @@ public class MusicPlayerGUI extends JFrame
         JPanel main = new JPanel(new BorderLayout());
         main.setBackground(BG);
 
-        JPanel header = new JPanel();
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        JPanel header = new JPanel(new BorderLayout());
         header.setBackground(BG);
         header.setBorder(BorderFactory.createEmptyBorder(28, 28, 12, 28));
+        JPanel titleBox = new JPanel();
+        titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.Y_AXIS));
+        titleBox.setBackground(BG);
         JLabel title = new JLabel("Your Playlist");
         title.setFont(new Font("SansSerif", Font.BOLD, 34));
         title.setForeground(TEXT);
@@ -218,17 +236,27 @@ public class MusicPlayerGUI extends JFrame
         countLabel.setFont(BASE);
         countLabel.setForeground(SUBTEXT);
         countLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(title);
-        header.add(Box.createVerticalStrut(4));
-        header.add(countLabel);
+        titleBox.add(title);
+        titleBox.add(Box.createVerticalStrut(4));
+        titleBox.add(countLabel);
+        header.add(titleBox, BorderLayout.CENTER);
+
+        JPanel albumButtons =
+            new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        albumButtons.setBackground(BG);
+        albumButtons.add(addAlbumButton);
+        albumButtons.add(removeAlbumButton);
+        JPanel buttonHolder = new JPanel(new BorderLayout());
+        buttonHolder.setBackground(BG);
+        buttonHolder.add(albumButtons, BorderLayout.SOUTH);
+        header.add(buttonHolder, BorderLayout.EAST);
         main.add(header, BorderLayout.NORTH);
 
         songList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         songList.setBackground(BG);
         songList.setFixedCellHeight(56);
         songList.setCellRenderer(new RowRenderer());
-        songList.addMouseListener(new MouseAdapter()
-        {
+        songList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e)
             {
@@ -248,6 +276,7 @@ public class MusicPlayerGUI extends JFrame
         main.add(scroll, BorderLayout.CENTER);
         return main;
     }
+
 
     /**
      * Builds the bottom player bar.
@@ -297,10 +326,12 @@ public class MusicPlayerGUI extends JFrame
         return bar;
     }
 
+
     /**
      * Gives a text field a dark, rounded-looking style.
      *
-     * @param f the field to style
+     * @param f
+     *            the field to style
      */
     private static void styleField(JTextField f)
     {
@@ -309,41 +340,54 @@ public class MusicPlayerGUI extends JFrame
         f.setCaretColor(TEXT);
         f.setBackground(ELEVATED);
         f.setDisabledTextColor(SUBTEXT);
-        f.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(ELEVATED),
-            BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+        f.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ELEVATED),
+                BorderFactory.createEmptyBorder(6, 10, 6, 10)));
     }
+
 
     /**
      * Gives the type combo box a dark style.
      *
-     * @param box the combo box to style
+     * @param box
+     *            the combo box to style
      */
     private static void styleCombo(JComboBox<String> box)
     {
         box.setFont(BASE);
         box.setBackground(ELEVATED);
         box.setForeground(TEXT);
-        box.setUI(new BasicComboBoxUI()
-        {
+        box.setUI(new BasicComboBoxUI() {
             @Override
             protected JButton createArrowButton()
             {
-                JButton b = new BasicArrowButton(BasicArrowButton.SOUTH,
-                    ELEVATED, ELEVATED, SUBTEXT, ELEVATED);
+                JButton b = new BasicArrowButton(
+                    BasicArrowButton.SOUTH,
+                    ELEVATED,
+                    ELEVATED,
+                    SUBTEXT,
+                    ELEVATED);
                 b.setBorder(BorderFactory.createEmptyBorder());
                 return b;
             }
         });
         box.setBorder(BorderFactory.createLineBorder(ELEVATED));
-        box.setRenderer(new DefaultListCellRenderer()
-        {
+        box.setRenderer(new DefaultListCellRenderer() {
             @Override
-            public Component getListCellRendererComponent(JList<?> list,
-                Object value, int index, boolean selected, boolean focus)
+            public Component getListCellRendererComponent(
+                JList<?> list,
+                Object value,
+                int index,
+                boolean selected,
+                boolean focus)
             {
-                super.getListCellRendererComponent(list, value, index,
-                    selected, focus);
+                super.getListCellRendererComponent(
+                    list,
+                    value,
+                    index,
+                    selected,
+                    focus);
                 setBackground(selected ? ROW_SELECTED : ELEVATED);
                 setForeground(TEXT);
                 setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
@@ -356,6 +400,7 @@ public class MusicPlayerGUI extends JFrame
     // Wiring
     // =====================================================================
 
+
     /**
      * Connects each control to its handler.
      */
@@ -363,6 +408,8 @@ public class MusicPlayerGUI extends JFrame
     {
         addButton.addActionListener(e -> handleAdd());
         removeButton.addActionListener(e -> handleRemove());
+        addAlbumButton.addActionListener(e -> handleAddAlbum());
+        removeAlbumButton.addActionListener(e -> handleDeleteAlbum());
         playButton.addActionListener(e -> handlePlay());
         nextButton.addActionListener(e -> handleNext());
         previousButton.addActionListener(e -> handlePrevious());
@@ -371,9 +418,10 @@ public class MusicPlayerGUI extends JFrame
         typeBox.addActionListener(e -> updateFormForType());
     }
 
+
     /**
-     * Enables only the fields that apply to the chosen type: album for
-     * songs, episode number for podcasts.
+     * Enables only the fields that apply to the chosen type: album for songs,
+     * episode number for podcasts.
      */
     private void updateFormForType()
     {
@@ -388,9 +436,10 @@ public class MusicPlayerGUI extends JFrame
     // Handlers (package-private so tests can call them)
     // =====================================================================
 
+
     /**
-     * Clears the list and refills it with describe() for each item.
-     * Keeps the current item highlighted when there is one.
+     * Clears the list and refills it with describe() for each item. Keeps the
+     * current item highlighted when there is one.
      */
     void refreshList()
     {
@@ -400,8 +449,8 @@ public class MusicPlayerGUI extends JFrame
         {
             listModel.addElement(item.describe());
         }
-        countLabel.setText(shownItems.length
-            + (shownItems.length == 1 ? " item" : " items"));
+        countLabel.setText(
+            shownItems.length + (shownItems.length == 1 ? " item" : " items"));
         int current = playlist.getCurrentIndex();
         if (current >= 0 && current < listModel.size())
         {
@@ -409,30 +458,38 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
     /**
-     * Reads the form, builds a Song or Podcast, adds it, and refreshes.
-     * Bad input shows a message in the status label and adds nothing.
+     * Reads the form, builds a Song or Podcast, adds it, and refreshes. Bad
+     * input shows a message in the status label and adds nothing.
      */
     void handleAdd()
     {
         try
         {
             boolean isSong = SONG.equals(typeBox.getSelectedItem());
-            int length = parseWholeNumber(lengthField.getText(),
+            int length = parseWholeNumber(
+                lengthField.getText(),
                 "Length must be a whole number greater than 0");
             Media item;
             if (isSong)
             {
-                item = new Song(titleField.getText(),
-                    artistOrHostField.getText(), albumField.getText(),
+                item = new Song(
+                    titleField.getText(),
+                    artistOrHostField.getText(),
+                    albumField.getText(),
                     length);
             }
             else
             {
-                int episode = parseWholeNumber(episodeField.getText(),
+                int episode = parseWholeNumber(
+                    episodeField.getText(),
                     "Episode number must be a whole number greater than 0");
-                item = new Podcast(titleField.getText(),
-                    artistOrHostField.getText(), episode, length);
+                item = new Podcast(
+                    titleField.getText(),
+                    artistOrHostField.getText(),
+                    episode,
+                    length);
             }
             playlist.add(item);
             refreshList();
@@ -446,6 +503,7 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
     /**
      * Empties the add form after a successful add.
      */
@@ -458,13 +516,17 @@ public class MusicPlayerGUI extends JFrame
         lengthField.setText("");
     }
 
+
     /**
      * Parses a whole number from text.
      *
-     * @param text    the raw text
-     * @param message the message to use if the text is not a whole number
+     * @param text
+     *            the raw text
+     * @param message
+     *            the message to use if the text is not a whole number
      * @return the parsed value
-     * @throws IllegalArgumentException with the given message on bad text
+     * @throws IllegalArgumentException
+     *             with the given message on bad text
      */
     private int parseWholeNumber(String text, String message)
     {
@@ -477,6 +539,7 @@ public class MusicPlayerGUI extends JFrame
             throw new IllegalArgumentException(message);
         }
     }
+
 
     /**
      * Removes the selected row (that exact copy, even with duplicates).
@@ -498,6 +561,241 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
+    /**
+     * Asks for an album title, artist, and song list in a dialog, then adds the
+     * album. Does nothing if the dialog is cancelled.
+     */
+    void handleAddAlbum()
+    {
+        JTextField titleInput = new JTextField(22);
+        JTextField artistInput = new JTextField(22);
+        JTextArea songsInput = new JTextArea(8, 22);
+        JScrollPane songsScroll = new JScrollPane(songsInput);
+
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        Component[] parts = { new JLabel("Album title"), titleInput,
+            new JLabel("Artist"), artistInput,
+            new JLabel("Songs (one per line: title, length in seconds)"),
+            songsScroll };
+        for (Component part : parts)
+        {
+            ((JComponent)part).setAlignmentX(Component.LEFT_ALIGNMENT);
+            form.add(part);
+            form.add(Box.createVerticalStrut(6));
+        }
+
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            form,
+            "Add album",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE);
+        if (choice == JOptionPane.OK_OPTION)
+        {
+            addAlbum(
+                titleInput.getText(),
+                artistInput.getText(),
+                songsInput.getText());
+        }
+    }
+
+
+    /**
+     * Builds an album from text and adds all of its songs, in order, to the end
+     * of the playlist. If anything is wrong, a message goes to the status label
+     * and nothing is added.
+     *
+     * @param title
+     *            the album title
+     * @param artist
+     *            the artist; blank becomes "Unknown"
+     * @param songLines
+     *            one song per line, written as "title, seconds"
+     */
+    void addAlbum(String title, String artist, String songLines)
+    {
+        try
+        {
+            Album album = new Album(title, artist);
+            String[] lines =
+                (songLines == null ? "" : songLines).split("\\r?\\n");
+            for (int i = 0; i < lines.length; i++)
+            {
+                String line = lines[i].trim();
+                if (line.isEmpty())
+                {
+                    continue;
+                }
+                try
+                {
+                    album.add(parseAlbumSong(line, album));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new IllegalArgumentException(
+                        "Line " + (i + 1) + ": " + e.getMessage());
+                }
+            }
+            if (album.isEmpty())
+            {
+                throw new IllegalArgumentException(
+                    "Album needs at least one song");
+            }
+            int count = album.size();
+            album.addToPlaylist(playlist);
+            refreshList();
+            updateNowPlaying();
+            showStatus(
+                "Added album " + album.getTitle() + " (" + count
+                    + (count == 1 ? " song)" : " songs)"));
+        }
+        catch (IllegalArgumentException e)
+        {
+            showStatus(e.getMessage());
+        }
+    }
+
+
+    /**
+     * Turns one "title, seconds" line into a song on the given album.
+     *
+     * @param line
+     *            the trimmed, non-empty line
+     * @param album
+     *            the album the song belongs to
+     * @return the new song
+     * @throws IllegalArgumentException
+     *             if the line is not valid
+     */
+    private Song parseAlbumSong(String line, Album album)
+    {
+        int comma = line.lastIndexOf(',');
+        if (comma < 0)
+        {
+            throw new IllegalArgumentException(
+                "Write each song as: title, seconds");
+        }
+        int length = parseWholeNumber(
+            line.substring(comma + 1),
+            "Length must be a whole number greater than 0");
+        return new Song(
+            line.substring(0, comma),
+            album.getArtist(),
+            album.getTitle(),
+            length);
+    }
+
+
+    /**
+     * Asks which album to delete (from the albums in the playlist) and deletes
+     * it. Does nothing if the dialog is cancelled.
+     */
+    void handleDeleteAlbum()
+    {
+        String[] titles = albumTitlesInPlaylist();
+        if (titles.length == 0)
+        {
+            showStatus("No albums in the playlist");
+            return;
+        }
+        Object choice = JOptionPane.showInputDialog(
+            this,
+            "Delete which album?",
+            "Delete album",
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            titles,
+            titles[0]);
+        if (choice != null)
+        {
+            deleteAlbum((String)choice);
+        }
+    }
+
+
+    /**
+     * Removes every song from the playlist whose album matches the given title
+     * (case is ignored). The current position is kept in step by the playlist.
+     *
+     * @param title
+     *            the album title to delete
+     */
+    void deleteAlbum(String title)
+    {
+        int removed = 0;
+        Media[] items = playlist.getItems();
+        // go backward so earlier positions stay valid after each removal
+        for (int i = items.length - 1; i >= 0; i--)
+        {
+            if (isFromAlbum(items[i], title))
+            {
+                playlist.removeAt(i);
+                removed++;
+            }
+        }
+        refreshList();
+        updateNowPlaying();
+        if (removed == 0)
+        {
+            showStatus("No album named " + title);
+        }
+        else
+        {
+            showStatus(
+                "Deleted album " + title + " (" + removed
+                    + (removed == 1 ? " song)" : " songs)"));
+        }
+    }
+
+
+    /**
+     * Tells whether an item is a song on the named album.
+     *
+     * @param item
+     *            the playlist item
+     * @param title
+     *            the album title, or null
+     * @return true for a song whose album equals title, ignoring case
+     */
+    private boolean isFromAlbum(Media item, String title)
+    {
+        return title != null && item instanceof Song
+            && ((Song)item).getAlbum().equalsIgnoreCase(title);
+    }
+
+
+    /**
+     * Lists each album that has songs in the playlist, once, in order of first
+     * appearance. Songs with an unknown album are skipped.
+     *
+     * @return the album titles
+     */
+    private String[] albumTitlesInPlaylist()
+    {
+        ArrayList<String> titles = new ArrayList<String>();
+        for (Media item : playlist.getItems())
+        {
+            if (!(item instanceof Song))
+            {
+                continue;
+            }
+            String album = ((Song)item).getAlbum();
+            boolean seen = album.equalsIgnoreCase(UNKNOWN_ALBUM);
+            for (String t : titles)
+            {
+                seen = seen || t.equalsIgnoreCase(album);
+            }
+            if (!seen)
+            {
+                titles.add(album);
+            }
+        }
+        return titles.toArray(new String[0]);
+    }
+
+
     /**
      * Plays the selected row and updates the now-playing label.
      */
@@ -514,6 +812,7 @@ public class MusicPlayerGUI extends JFrame
         showStatus(" ");
     }
 
+
     /**
      * Moves to the next item and updates the label.
      */
@@ -521,6 +820,7 @@ public class MusicPlayerGUI extends JFrame
     {
         showMoveResult(playlist.next());
     }
+
 
     /**
      * Moves to the previous item and updates the label.
@@ -530,10 +830,12 @@ public class MusicPlayerGUI extends JFrame
         showMoveResult(playlist.previous());
     }
 
+
     /**
      * Shows the outcome of a next/previous move.
      *
-     * @param result the item moved to, or empty if there was no move
+     * @param result
+     *            the item moved to, or empty if there was no move
      */
     private void showMoveResult(Optional<Media> result)
     {
@@ -553,6 +855,7 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
     /**
      * Shuffles the playlist and refreshes the list.
      */
@@ -570,6 +873,7 @@ public class MusicPlayerGUI extends JFrame
         updateNowPlaying();
     }
 
+
     /**
      * Passes the toggle state to the playlist's loop mode.
      */
@@ -577,6 +881,7 @@ public class MusicPlayerGUI extends JFrame
     {
         playlist.setLoopMode(loopToggle.isSelected());
     }
+
 
     /**
      * Sets the now-playing label to the current item, or "Nothing playing".
@@ -595,25 +900,29 @@ public class MusicPlayerGUI extends JFrame
         songList.repaint();
     }
 
+
     /**
      * Sets the status label text. Null shows a blank label.
      *
-     * @param message the text to show
+     * @param message
+     *            the text to show
      */
     void showStatus(String message)
     {
-        statusLabel.setText(message == null || message.isEmpty()
-            ? " " : message);
+        statusLabel
+            .setText(message == null || message.isEmpty() ? " " : message);
     }
 
     // =====================================================================
     // Custom look: rows, buttons, scrollbar
     // =====================================================================
 
+
     /**
      * Formats seconds as m:ss.
      *
-     * @param seconds the length in seconds
+     * @param seconds
+     *            the length in seconds
      * @return the text, e.g. "4:26"
      */
     private static String formatLength(int seconds)
@@ -622,13 +931,15 @@ public class MusicPlayerGUI extends JFrame
     }
 
     /**
-     * Draws one track row: number, title with subtitle, and length.
-     * The row for the current item shows a green marker and title.
+     * Draws one track row: number, title with subtitle, and length. The row for
+     * the current item shows a green marker and title.
      */
-    private class RowRenderer extends JPanel
+    private class RowRenderer
+        extends JPanel
         implements ListCellRenderer<String>
     {
-        private final JLabel numberLabel = new JLabel("", SwingConstants.CENTER);
+        private final JLabel numberLabel =
+            new JLabel("", SwingConstants.CENTER);
         private final JLabel titleLabel = new JLabel();
         private final JLabel subLabel = new JLabel();
         private final JLabel lengthLabel = new JLabel();
@@ -661,9 +972,14 @@ public class MusicPlayerGUI extends JFrame
             add(lengthLabel, BorderLayout.EAST);
         }
 
+
         @Override
-        public Component getListCellRendererComponent(JList<? extends String> list,
-            String value, int index, boolean selected, boolean focus)
+        public Component getListCellRendererComponent(
+            JList<? extends String> list,
+            String value,
+            int index,
+            boolean selected,
+            boolean focus)
         {
             Media item = index < shownItems.length ? shownItems[index] : null;
             boolean playing = index == playlist.getCurrentIndex();
@@ -688,22 +1004,24 @@ public class MusicPlayerGUI extends JFrame
             return this;
         }
 
+
         /**
          * Builds the gray second line for a row.
          *
-         * @param item the item shown
+         * @param item
+         *            the item shown
          * @return artist and album for songs, host and episode for podcasts
          */
         private String subtitle(Media item)
         {
             if (item instanceof Song)
             {
-                Song s = (Song) item;
+                Song s = (Song)item;
                 return s.getArtist() + "  \u2022  " + s.getAlbum();
             }
             if (item instanceof Podcast)
             {
-                Podcast p = (Podcast) item;
+                Podcast p = (Podcast)item;
                 return p.getHost() + "  \u2022  Episode "
                     + p.getEpisodeNumber();
             }
@@ -714,19 +1032,30 @@ public class MusicPlayerGUI extends JFrame
     /**
      * Paints a rounded pill with centered text.
      *
-     * @param g      the graphics context
-     * @param b      the button being painted
-     * @param fill   fill color, or null for none
-     * @param border outline color, or null for none
-     * @param text   text color
+     * @param g
+     *            the graphics context
+     * @param b
+     *            the button being painted
+     * @param fill
+     *            fill color, or null for none
+     * @param border
+     *            outline color, or null for none
+     * @param text
+     *            text color
      */
-    private static void paintPill(Graphics g, AbstractButton b, Color fill,
-        Color border, Color text)
+    private static void paintPill(
+        Graphics g,
+        AbstractButton b,
+        Color fill,
+        Color border,
+        Color text)
     {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+        Graphics2D g2 = (Graphics2D)g.create();
+        g2.setRenderingHint(
+            RenderingHints.KEY_ANTIALIASING,
             RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+        g2.setRenderingHint(
+            RenderingHints.KEY_TEXT_ANTIALIASING,
             RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         int w = b.getWidth();
         int h = b.getHeight();
@@ -749,10 +1078,12 @@ public class MusicPlayerGUI extends JFrame
         g2.dispose();
     }
 
+
     /**
      * Applies the shared flat-button setup.
      *
-     * @param b the button to set up
+     * @param b
+     *            the button to set up
      */
     private static void flatten(AbstractButton b)
     {
@@ -767,7 +1098,8 @@ public class MusicPlayerGUI extends JFrame
     /**
      * A rounded pill button, filled or outlined.
      */
-    private static class PillButton extends JButton
+    private static class PillButton
+        extends JButton
     {
         private final Color fill;
         private final Color border;
@@ -776,10 +1108,14 @@ public class MusicPlayerGUI extends JFrame
         /**
          * Creates a pill button.
          *
-         * @param label     the text
-         * @param fill      fill color, or null for an outline-only pill
-         * @param textColor the text color
-         * @param border    outline color, or null for none
+         * @param label
+         *            the text
+         * @param fill
+         *            fill color, or null for an outline-only pill
+         * @param textColor
+         *            the text color
+         * @param border
+         *            outline color, or null for none
          */
         PillButton(String label, Color fill, Color textColor, Color border)
         {
@@ -792,6 +1128,7 @@ public class MusicPlayerGUI extends JFrame
             setBorder(BorderFactory.createEmptyBorder(9, 20, 9, 20));
         }
 
+
         @Override
         protected void paintComponent(Graphics g)
         {
@@ -799,15 +1136,18 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
     /**
      * A pill toggle that turns green when selected.
      */
-    private static class PillToggle extends JToggleButton
+    private static class PillToggle
+        extends JToggleButton
     {
         /**
          * Creates the toggle.
          *
-         * @param label the text
+         * @param label
+         *            the text
          */
         PillToggle(String label)
         {
@@ -816,6 +1156,7 @@ public class MusicPlayerGUI extends JFrame
             setFont(BOLD);
             setBorder(BorderFactory.createEmptyBorder(9, 20, 9, 20));
         }
+
 
         @Override
         protected void paintComponent(Graphics g)
@@ -831,37 +1172,45 @@ public class MusicPlayerGUI extends JFrame
         }
     }
 
+
     /**
      * A drawn transport button: play (white circle), next, or previous.
      */
-    private static class TransportButton extends JButton
+    private static class TransportButton
+        extends JButton
     {
         static final int PLAY = 0;
-        static final int NEXT = 1;
-        static final int PREVIOUS = 2;
+        static final int NEXT1 = 1;
+        static final int PREVIOUS1 = 2;
 
         private final int kind;
 
         /**
          * Creates a transport button.
          *
-         * @param kind one of PLAY, NEXT, PREVIOUS
-         * @param size the width and height in pixels
+         * @param kind
+         *            one of PLAY, NEXT, PREVIOUS
+         * @param size
+         *            the width and height in pixels
          */
         TransportButton(int kind, int size)
         {
             this.kind = kind;
             flatten(this);
             setPreferredSize(new Dimension(size, size));
-            setToolTipText(kind == PLAY ? "Play selected"
-                : kind == NEXT ? "Next" : "Previous");
+            setToolTipText(
+                kind == PLAY
+                    ? "Play selected"
+                    : kind == NEXT1 ? "Next" : "Previous");
         }
+
 
         @Override
         protected void paintComponent(Graphics g)
         {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+            Graphics2D g2 = (Graphics2D)g.create();
+            g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
@@ -877,39 +1226,58 @@ public class MusicPlayerGUI extends JFrame
                 g2.setColor(Color.BLACK);
                 int x1 = w * 38 / 100;
                 int x2 = w * 72 / 100;
-                g2.fillPolygon(new Polygon(new int[] { x1, x1, x2 },
-                    new int[] { top, bottom, mid }, 3));
+                g2.fillPolygon(
+                    new Polygon(
+                        new int[] { x1, x1, x2 },
+                        new int[] { top, bottom, mid },
+                        3));
             }
             else
             {
                 g2.setColor(hover ? TEXT : SUBTEXT);
-                if (kind == NEXT)
+                if (kind == NEXT1)
                 {
                     int x1 = w * 26 / 100;
                     int x2 = w * 62 / 100;
-                    g2.fillPolygon(new Polygon(new int[] { x1, x1, x2 },
-                        new int[] { top, bottom, mid }, 3));
-                    g2.fill(new Rectangle(w * 66 / 100, top,
-                        Math.max(2, w * 9 / 100), bottom - top));
+                    g2.fillPolygon(
+                        new Polygon(
+                            new int[] { x1, x1, x2 },
+                            new int[] { top, bottom, mid },
+                            3));
+                    g2.fill(
+                        new Rectangle(
+                            w * 66 / 100,
+                            top,
+                            Math.max(2, w * 9 / 100),
+                            bottom - top));
                 }
                 else
                 {
                     int x1 = w * 74 / 100;
                     int x2 = w * 38 / 100;
-                    g2.fillPolygon(new Polygon(new int[] { x1, x1, x2 },
-                        new int[] { top, bottom, mid }, 3));
-                    g2.fill(new Rectangle(w * 25 / 100, top,
-                        Math.max(2, w * 9 / 100), bottom - top));
+                    g2.fillPolygon(
+                        new Polygon(
+                            new int[] { x1, x1, x2 },
+                            new int[] { top, bottom, mid },
+                            3));
+                    g2.fill(
+                        new Rectangle(
+                            w * 25 / 100,
+                            top,
+                            Math.max(2, w * 9 / 100),
+                            bottom - top));
                 }
             }
             g2.dispose();
         }
     }
 
+
     /**
      * A thin dark scrollbar with no arrow buttons.
      */
-    private static class DarkScrollBarUI extends BasicScrollBarUI
+    private static class DarkScrollBarUI
+        extends BasicScrollBarUI
     {
         @Override
         protected void configureScrollBarColors()
@@ -918,17 +1286,20 @@ public class MusicPlayerGUI extends JFrame
             trackColor = BG;
         }
 
+
         @Override
         protected JButton createDecreaseButton(int orientation)
         {
             return zeroButton();
         }
 
+
         @Override
         protected JButton createIncreaseButton(int orientation)
         {
             return zeroButton();
         }
+
 
         /**
          * Makes an invisible button, so the arrows take no space.
@@ -944,6 +1315,7 @@ public class MusicPlayerGUI extends JFrame
             return b;
         }
 
+
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle r)
         {
@@ -951,11 +1323,13 @@ public class MusicPlayerGUI extends JFrame
             g.fillRect(r.x, r.y, r.width, r.height);
         }
 
+
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle r)
         {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+            Graphics2D g2 = (Graphics2D)g.create();
+            g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(thumbColor);
             g2.fillRoundRect(r.x + 2, r.y, r.width - 4, r.height, 6, 6);
