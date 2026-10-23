@@ -4,7 +4,7 @@
  * are stored in a LinkedChain, in track order, and duplicates are allowed.
  *
  * @author Leo Quezada-Rocha
- * @version October 2026
+ * @version Oct 22, 2026
  */
 public class Album
 {
