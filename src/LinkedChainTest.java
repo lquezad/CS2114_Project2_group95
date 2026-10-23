@@ -1,12 +1,12 @@
 import student.TestCase;
 
 /**
- * Tests for LinkedChain&lt;T&gt;. Chains hold Strings named "A", "B", "C".
+ * Tests for LinkedChain.
  */
-public class LinkedChainTest extends TestCase
+public class LinkedChainTest
+    extends TestCase
 {
     private LinkedChain<String> chain;
-
 
     public void setUp()
     {
@@ -24,6 +24,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that add puts the new entry at the front of the chain.
+     */
     public void testAdd()
     {
         fill("B", "C");
@@ -32,22 +35,31 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that add rejects null with an IllegalArgumentException and leaves
+     * the chain unchanged.
+     */
     public void testAddNull()
     {
         fill("A");
+        Exception exception = null;
         try
         {
             chain.add(null);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            assertEquals("[A]", chain.toString());
-            assertEquals(1, chain.size());
+            exception = e;
         }
+        assertNotNull(exception);
+        assertEquals("[A]", chain.toString());
+        assertEquals(1, chain.size());
     }
 
 
+    /**
+     * Checks that addToEnd puts the new entry at the end of the chain.
+     */
     public void testAddToEnd()
     {
         fill("A", "B");
@@ -57,21 +69,30 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that addToEnd rejects null with an IllegalArgumentException and
+     * leaves the chain unchanged.
+     */
     public void testAddToEndNull()
     {
         fill("A", "B");
+        Exception exception = null;
         try
         {
             chain.addToEnd(null);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            assertEquals("[A, B]", chain.toString());
+            exception = e;
         }
+        assertNotNull(exception);
+        assertEquals("[A, B]", chain.toString());
     }
 
 
+    /**
+     * Checks that remove returns and removes the first entry.
+     */
     public void testRemove()
     {
         fill("A", "B", "C");
@@ -80,6 +101,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that remove returns null on an empty chain.
+     */
     public void testRemoveEmptyChain()
     {
         assertNull(chain.remove());
@@ -87,6 +111,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that remove(entry) takes out only the first matching entry.
+     */
     public void testRemoveEntry()
     {
         fill("A", "B", "A");
@@ -95,6 +122,10 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that remove(entry) returns false and changes nothing when the
+     * entry is missing.
+     */
     public void testRemoveEntryNotFound()
     {
         fill("A", "B");
@@ -103,6 +134,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that remove(entry) returns false and changes nothing for null.
+     */
     public void testRemoveEntryNull()
     {
         fill("A", "B");
@@ -111,6 +145,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that remove(entry) returns false on an empty chain.
+     */
     public void testRemoveEntryEmptyChain()
     {
         assertFalse(chain.remove("A"));
@@ -118,6 +155,10 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that an entry in the middle can be removed and the chain stays
+     * linked.
+     */
     public void testRemoveEntryMiddle()
     {
         fill("A", "B", "C");
@@ -127,6 +168,10 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that the last entry can be removed and the chain ends at the new
+     * last entry.
+     */
     public void testRemoveEntryLast()
     {
         fill("A", "B", "C");
@@ -136,6 +181,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that clear removes every entry.
+     */
     public void testClear()
     {
         fill("A", "B", "C");
@@ -146,6 +194,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that clear on an empty chain does nothing.
+     */
     public void testClearEmptyChain()
     {
         chain.clear();
@@ -154,6 +205,10 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that get returns the entry at the given position without removing
+     * it.
+     */
     public void testGet()
     {
         fill("A", "B", "C");
@@ -163,35 +218,44 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that get throws an IndexOutOfBoundsException for a negative index,
+     * an index past the end, or an empty chain.
+     */
     public void testGetInvalidIndex()
     {
         fill("A", "B", "C");
         int[] bad = { -1, 3 };
         for (int i : bad)
         {
+            Exception exception = null;
             try
             {
                 chain.get(i);
-                fail("Expected IndexOutOfBoundsException for index " + i);
             }
             catch (IndexOutOfBoundsException e)
             {
-                // expected
+                exception = e;
             }
+            assertNotNull(exception);
         }
         LinkedChain<String> empty = new LinkedChain<String>();
+        Exception exception = null;
         try
         {
             empty.get(0);
-            fail("Expected IndexOutOfBoundsException on empty chain");
         }
         catch (IndexOutOfBoundsException e)
         {
-            // expected
+            exception = e;
         }
+        assertNotNull(exception);
     }
 
 
+    /**
+     * Checks that contains is true for an entry in the chain.
+     */
     public void testContains()
     {
         fill("A", "B", "C");
@@ -199,6 +263,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that contains is false for null.
+     */
     public void testContainsNull()
     {
         fill("A", "B", "C");
@@ -206,12 +273,18 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that contains is false on an empty chain.
+     */
     public void testContainsEmptyChain()
     {
         assertFalse(chain.contains("A"));
     }
 
 
+    /**
+     * Checks that count returns how many times an entry appears.
+     */
     public void testCount()
     {
         fill("A", "B", "A");
@@ -219,6 +292,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that count returns 0 for null.
+     */
     public void testCountNull()
     {
         fill("A", "B", "A");
@@ -226,12 +302,18 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that count returns 0 on an empty chain.
+     */
     public void testCountEmptyChain()
     {
         assertEquals(0, chain.count("A"));
     }
 
 
+    /**
+     * Checks that size returns the number of entries.
+     */
     public void testSize()
     {
         fill("A", "B", "C");
@@ -239,18 +321,27 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that size is 0 for an empty chain.
+     */
     public void testSizeEmptyChain()
     {
         assertEquals(0, chain.size());
     }
 
 
+    /**
+     * Checks that a new chain is empty.
+     */
     public void testIsEmpty()
     {
         assertTrue(chain.isEmpty());
     }
 
 
+    /**
+     * Checks that a chain with an entry is not empty.
+     */
     public void testIsEmptyNonEmptyChain()
     {
         fill("A");
@@ -258,6 +349,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that toArray fills the array with the entries, first entry first.
+     */
     public void testToArray()
     {
         fill("A", "B", "C");
@@ -270,36 +364,49 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that toArray rejects a null array with an
+     * IllegalArgumentException.
+     */
     public void testToArrayNullArray()
     {
         fill("A", "B", "C");
+        Exception exception = null;
         try
         {
             chain.toArray(null);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            // expected
+            exception = e;
         }
+        assertNotNull(exception);
     }
 
 
+    /**
+     * Checks that toArray rejects an array that is too small with an
+     * IllegalArgumentException.
+     */
     public void testToArrayTooSmallArray()
     {
         fill("A", "B", "C");
+        Exception exception = null;
         try
         {
             chain.toArray(new String[2]);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            // expected
+            exception = e;
         }
+        assertNotNull(exception);
     }
 
 
+    /**
+     * Checks that toArray leaves the array unchanged for an empty chain.
+     */
     public void testToArrayEmptyChain()
     {
         String[] arr = { "x", "y" };
@@ -309,6 +416,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that toString lists the entries in order inside square brackets.
+     */
     public void testToString()
     {
         fill("A", "B", "C");
@@ -316,12 +426,18 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that toString shows "[]" for an empty chain.
+     */
     public void testToStringEmptyChain()
     {
         assertEquals("[]", chain.toString());
     }
 
 
+    /**
+     * Checks that removeAt returns and removes the entry at the given position.
+     */
     public void testRemoveAt()
     {
         fill("A", "B", "C");
@@ -330,6 +446,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that removeAt(0) removes the first entry.
+     */
     public void testRemoveAtFirstIndex()
     {
         fill("A", "B", "C");
@@ -338,35 +457,46 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that removeAt throws an IndexOutOfBoundsException and changes
+     * nothing for a bad index.
+     */
     public void testRemoveAtInvalidIndex()
     {
         fill("A", "B", "C");
         int[] bad = { -1, 3 };
         for (int i : bad)
         {
+            Exception exception = null;
             try
             {
                 chain.removeAt(i);
-                fail("Expected IndexOutOfBoundsException for index " + i);
             }
             catch (IndexOutOfBoundsException e)
             {
-                assertEquals("[A, B, C]", chain.toString());
+                exception = e;
             }
+            assertNotNull(exception);
+            assertEquals("[A, B, C]", chain.toString());
         }
         LinkedChain<String> empty = new LinkedChain<String>();
+        Exception exception = null;
         try
         {
             empty.removeAt(0);
-            fail("Expected IndexOutOfBoundsException on empty chain");
         }
         catch (IndexOutOfBoundsException e)
         {
-            assertEquals(0, empty.size());
+            exception = e;
         }
+        assertNotNull(exception);
+        assertEquals(0, empty.size());
     }
 
 
+    /**
+     * Checks that indexOf returns the position of an entry.
+     */
     public void testIndexOf()
     {
         fill("A", "B", "C");
@@ -374,6 +504,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that indexOf returns -1 when the entry is missing.
+     */
     public void testIndexOfNotFound()
     {
         fill("A", "B", "C");
@@ -381,6 +514,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that indexOf returns -1 for null.
+     */
     public void testIndexOfNull()
     {
         fill("A", "B", "C");
@@ -388,6 +524,9 @@ public class LinkedChainTest extends TestCase
     }
 
 
+    /**
+     * Checks that indexOf returns -1 on an empty chain.
+     */
     public void testIndexOfEmptyChain()
     {
         assertEquals(-1, chain.indexOf("A"));

@@ -11,9 +11,9 @@ public class Album
     // ~ Fields ................................................................
     private static final String UNKNOWN = "Unknown";
 
-    private final String title;               // name of the album
-    private final String artist;              // artist of the album
-    private final LinkedChain<Song> tracks;   // songs in track order
+    private final String title;
+    private final String artist;
+    private final LinkedChain<Song> tracks;
 
     // ~ Constructors ..........................................................
     /**

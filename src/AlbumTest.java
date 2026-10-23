@@ -60,15 +60,17 @@ public class AlbumTest
         String[] titles = { null, "", "   " };
         for (String t : titles)
         {
+            Exception exception = null;
             try
             {
                 new Album(t, "Coldplay");
-                fail("Expected IllegalArgumentException for title: " + t);
             }
             catch (IllegalArgumentException e)
             {
-                assertEquals("Title must not be blank", e.getMessage());
+                exception = e;
             }
+            assertNotNull(exception);
+            assertEquals("Title must not be blank", exception.getMessage());
         }
     }
 
@@ -115,15 +117,17 @@ public class AlbumTest
     public void testAddNull()
     {
         album.add(yellow);
+        Exception exception = null;
         try
         {
             album.add(null);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            assertEquals(1, album.size());
+            exception = e;
         }
+        assertNotNull(exception);
+        assertEquals(1, album.size());
     }
 
 
@@ -371,15 +375,17 @@ public class AlbumTest
     public void testAddToPlaylistNull()
     {
         fillAll();
+        Exception exception = null;
         try
         {
             album.addToPlaylist(null);
-            fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException e)
         {
-            assertEquals("Playlist must not be null", e.getMessage());
+            exception = e;
         }
+        assertNotNull(exception);
+        assertEquals("Playlist must not be null", exception.getMessage());
     }
 
 
