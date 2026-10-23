@@ -41,3 +41,7 @@ Two tests in `MusicPlayerTest` open the real window, so run the tests on a compu
 | `MusicPlayerGUITest.java` | Shea | Wrote and tested |
 
 **GenAI use:** We used GenAI to research the open questions about loop mode and the Swing GUI, and to help add the album and podcast series buttons, dialogs and handlers to the GUI and the matching GUI tests. Each class owner reviewed and tested the code for their own class, and we checked the Big-O answers, the `currentIndex` logic after a removal, and the test expectations by hand.
+
+**System Diagram:**
+
+<img width="645" height="345" alt="Screenshot 2026-10-22 at 11 54 54 PM" src="https://github.com/user-attachments/assets/4aea8be1-4539-4bc9-bf3e-cef0e5a263e2" />
